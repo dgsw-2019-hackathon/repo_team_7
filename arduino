@@ -1,0 +1,190 @@
+void printDistance();
+void getDistance();
+void make_wave();
+void make_wave_door();
+
+unsigned long prevMicros = 0;
+unsigned long prevMillis = 0;
+unsigned long prevMillis_door = 0;
+
+//int flag_1 = 0, flag_2 = 0, flag_3 = 0, 
+//    flag_4 = 0; flag_5 = 0;
+int wait =0; int flag =0;
+
+int dis_door = 0;
+unsigned long time_sensor[12] = {0,};
+unsigned long distance[6] = {0,};
+unsigned long avg[2] = {0,};
+int time_count = 0; int count = 0; int i =0; int count_avg = 0;
+
+void setup() {
+  // put your setup code here, to run once:
+//  DDRB = 0x05;
+  Serial.begin(9600);
+  pinMode(11,OUTPUT);
+  pinMode(3,INPUT);
+  pinMode(2,INPUT);
+  pinMode(12,OUTPUT);
+  pinMode(13,OUTPUT);
+//  DDRD = 0x00;
+//  EICRA = 0x03;
+//  EIMSK = 0x01;
+  
+  TCCR2A = 0x03;
+  TCCR2B = 0x05;
+  OCR2A = 86;
+  TIMSK2 = 0x03;
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+
+  unsigned long currMillis_door = millis();
+  unsigned long currMillis = millis();
+  
+  if(currMillis - prevMillis >= 20){
+    prevMillis = currMillis;
+    OCR2A++;
+
+    //if(wait == 0){
+      //Serial.print("wait0 : into");
+      if(OCR2A ==87 && wait == 0){
+        make_wave();
+      }
+      if(OCR2A ==143 && wait == 0){
+        //static unsigned long currMicros = micros();
+        make_wave();
+      }
+      if(OCR2A ==171 && wait == 0){
+        //static unsigned long currMicros = micros();
+        make_wave();
+      }
+      if(OCR2A == 199 && wait == 0){
+        //static unsigned long currMicros = micros();
+        make_wave();
+      }
+      if(OCR2A == 254 && wait == 0){
+        make_wave();
+      }
+      if(i >= 5){
+        i = 0;
+        getDistance();
+      }
+    //}
+    
+    if(OCR2A >= 256){
+      OCR2A = 86;
+    }
+
+    
+  }
+
+  if(currMillis_door - prevMillis_door >= 2000){
+    prevMillis_door = currMillis_door;
+    make_wave_door();
+    if(!(dis_door >= 10)){
+      flag++;
+      //Serial.println("wait1");
+      wait = 1;
+      if(flag >= 2){
+        flag = 0;
+        //Serial.print("wait0");
+        wait = 0;
+      }
+    }
+    if(wait == 1){
+      //Serial.print("wait1 : ");
+      Serial.println(1);
+    }
+  }
+}
+
+void getDistance(){
+  avg[count_avg] = (distance[0] + distance[1] + distance[2] + distance[3] + distance[4])/5;
+  count_avg++;
+  if(count_avg == 2){
+    count_avg = 0;
+    if(avg[0]+50 < avg[1] || avg[0] - 50 > avg[1]){
+      Serial.println(1);
+    }else{
+      Serial.println(0);
+    }
+  }
+//  for(int i=0; i<5; i++)
+//   Serial.println(distance[i]); 
+//  Serial.println(" ");
+  //Serial.println(avg);
+}
+
+void make_wave() {
+  digitalWrite(12, LOW);
+  digitalWrite(2, LOW);
+  delayMicroseconds(2);
+  digitalWrite(12, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(12, LOW);
+
+  unsigned long duration = pulseIn(2, HIGH); 
+  float dis = ((float)(340 * duration) / 10000) / 2;
+  distance[i] = dis;
+  i++;
+//  if(i>=5){
+//    i=0;
+//    getDistance();
+//  }
+  //Serial.print(dis);
+}
+
+void make_wave_door(){
+  digitalWrite(11, LOW);
+  digitalWrite(3, LOW);
+  delayMicroseconds(2);
+  digitalWrite(11, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(11, LOW);
+
+  unsigned long duration_door = pulseIn(3, HIGH); 
+  dis_door = ((float)(340 * duration_door) / 10000) / 2;
+}
+//SIGNAL(INT0_vect){
+//  count++;
+//  time_count++;
+//  time_sensor[count] = micros();
+//
+//  if(count >= 2){
+//    count = 0;
+//    distance[i] = time_sensor[count] - time_sensor[count];
+//    Serial.println(distance[i]);
+//    i++;
+//    if(i >= 5){
+//      i=0;
+//      printDistance();
+//    }
+//  }
+
+  
+  //distance[i] = dis;
+//  i++;
+//  if(i>=5){
+//    i=0;
+//    printDistance();
+//  }
+  
+//  if(time_count > 1){
+//    distance[time_count] = time_sensor[time_count] - time_sensor[time_count-1];
+//  }
+  
+  //Serial.println(time_sensor[time_count]);
+  //Serial.println("h"); 
+  
+//}
+
+SIGNAL(TIMER2_OVF_vect){
+  //PORTB = 0x05;
+  digitalWrite(13,1);
+}
+
+SIGNAL(TIMER2_COMPA_vect){
+  //PORTB = 0x00;
+  digitalWrite(13,0);
+}
